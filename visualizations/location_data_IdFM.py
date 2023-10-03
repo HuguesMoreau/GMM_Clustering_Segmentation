@@ -129,6 +129,7 @@ def plot_clusters_location(log_r, id_array, color_per_cluster=None, display_lege
 
     geodf = geodf.set_crs(lat_long)
     geodf = geodf.to_crs(lambert)
+    geodf.rename(columns={"id_ref_ZdC":"id_ref_lda"}, inplace=True)
     geodf['id_ref_lda'] = geodf['id_ref_lda'].astype(float).astype(int)  # from string to int
     geodf = geodf.drop_duplicates('id_ref_lda')
 
