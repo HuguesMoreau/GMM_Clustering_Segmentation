@@ -12,7 +12,6 @@ from utils.nan_operators import nan_cov, nan_logsumexp
 from utils.data_generation import generate_data  # for testing
 from utils.exogenous_utils import explain_contributions_exogenous
 from visualizations.clustering_results import generate_colors, plot_cluster_ind_day
-# from visualizations.cluster_explanation import compute_plot_explanations
 
 
 
@@ -76,9 +75,6 @@ class GMM_segmentation():
 
         if min_slope != None:
             self.u += min_slope * np.linspace(-n_segments/2, n_segments/2, n_segments).reshape(1,-1)
-            # segment_centers = np.linspace(1/(2*n_segments), 1-1/(2*n_segments), n_segments)
-            # segment_borders = np.linspace(0, 1, n_segments+1)
-            # segment_centers =(segment_borders[1:] + segment_borders[:-1])/2
             segment_borders = np.linspace(0, 1, n_segments+1)[1:-1]  # shape: (n_clusters, n_segments-1)
             diff_u = np.diff(self.u, axis=1) # shape: (n_clusters, n_segments-1)
             self.v[:,1:] -= np.cumsum(segment_borders*diff_u, axis=1)
@@ -86,15 +82,11 @@ class GMM_segmentation():
             self.u -= self.u.mean()
             self.v -= self.v.mean()
 
-
-
-
         self.n_parameters = self.m.size + self.alpha.size + self.beta.size + self.gamma.size +\
                             self.n_sigma_parameters + (self.pi.size - 1) +\
                             (self.u.size - self.n_clusters) + (self.v.size - self.n_clusters)
                             # u and v are overparametrized as is
         self.LL_list = []
-        self.LL_list_alt = []
         self.proportions_history = []
         self.linear_regression_variance_history = []
 
@@ -103,7 +95,7 @@ class GMM_segmentation():
         """For simplicity, we allow some of the variables to be None. This function
         turns None into useable arrays.
         Note that this function is only about creating arrays with 0 columns to match function signature,
-        it does NOT replace NaN values in the arrays"""
+        it does not replace NaN values in the arrays"""
         if n_individuals is None: n_individuals = self.n_individuals # number of **training** samples
         if n_days        is None: n_days        = self.n_days        # number of **training** days*
 
@@ -252,7 +244,7 @@ class GMM_segmentation():
             How far the samples are from each segment mean, positive or negative (Y - mean)
             Note that the residuals do not care about the standard deviation.
         /!\ This array is likely to be big. In practice, we only use this function in dimension 1,
-        with one cluster and one segment (pure linear regression).
+        with one cluster or one segment (pure linear regression).
         """
         n_individuals, n_days, dim = Y.shape
         ind_variables, temp_variables, mixed_variables = self.unpack_vars(variables, n_individuals, n_days)
@@ -474,7 +466,6 @@ class GMM_segmentation():
             # reset some of the variables
             self.LL_list_CEM = self.LL_list
             self.LL_list = []
-            self.LL_list_alt = []
             self.proportions_history = []
             self.linear_regression_variance_history = []
             return
@@ -598,8 +589,8 @@ class GMM_segmentation():
           happen in practice because we will standard-scale them.
         init_method: couple of strings. The first string applies to the cluster, the other, to the segments.
             Possible strings are, for clusters|segments
-            - "kmeans" (where individuals|days play the role of samples, and (hours*days)|shours are features)
-            - "random" draw from a Gaussan where the mean and covariance are the ones of the provided dataset Y
+            - "kmeans" (where individuals|days play the role of samples, and (individuals*days)|hours are features)
+            - "random" draw from a Gaussian where the mean and covariance are the ones of the provided dataset Y
             - "uniform" (for segments only): divides the time axis into n_segments uniform segments, and compute the
                 mean per segment.
             Note that the intitialization for the exogenous variables' contributions and covariance
@@ -687,8 +678,6 @@ if __name__ == "__main__":
 
 
     seed =  np.random.randint(1,10001)
-    # seed = 249
-    # seed = 5923
     np.random.seed(seed)
     print("="*40+f"\n\t\tSEED = {seed}\n"+"="*40)
     n_clusters = 4

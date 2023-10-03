@@ -20,15 +20,7 @@ dirnames = ['data-rf-2015',
             'data-rf-2019',
             'data-rf-2020',
             'data-rf-2021',
-            'data-rf-2022',
-            'data-rs-2015',
-            'data-rs-2016',
-            'data-rs-2017',
-            'data-rs-2018',
-            'data-rs-2019',
-            'data-rs-2020',
-            'data-rs-2021',
-            'data-rs-2022',]
+            'data-rf-2022',]
 
 
 rail_stations_filename = Path(r"auxiliary_data/emplacement-des-gares-idf-data-generalisee.csv")
@@ -58,25 +50,16 @@ if __name__ == "__main__":
     individual_dataframes = []
     for file_path in all_file_paths:
         file_extension = str(file_path)[-4:]
-        sep = ';' if file_extension == '.csv' else '\t'
-        df = pd.read_csv(file_path, sep=sep,  encoding = 'unicode_escape')
+        sep = '\t|;'   # tab or semicolumn
+        df = pd.read_csv(file_path, sep=sep,  encoding = 'unicode_escape',
+                         engine='python')
         if 'ï»¿JOUR' in df.columns : # 2022 data is a bit problematic
             df = df.rename(columns={'ï»¿JOUR': 'JOUR'})
+            
+        try: 
             df["JOUR"] = pd.to_datetime(df["JOUR"], format="%Y-%m-%d")
-        else:
+        except ValueError:
             df["JOUR"] = pd.to_datetime(df["JOUR"], format="%d/%m/%Y")
-
-
-        # days = [d.astype('M8[D]').astype('O') for d in df["JOUR"].unique()]
-        # start_date = df["JOUR"].min().to_pydatetime().date()
-        # end_date   = df["JOUR"].max().to_pydatetime().date()
-        # delta = end_date - start_date   # returns timedelta
-        # print('\n', file_path)
-        # print(f"\t {start_date} - {end_date}")
-        # for i in range(delta.days + 1):
-        #     d = start_date + datetime.timedelta(days=i)
-        #     if d not in days:
-        #         print("\tmissing", d)
 
         individual_dataframes.append(df)
 
@@ -218,16 +201,19 @@ def load_transport_data(network_type, debug=False):
 
     #list_dataframes = [pd.read_csv(data_path + fname, sep=";") for fname in filenames]
     individual_dataframes = []
-    for file_path in all_file_paths:
-        file_extension = str(file_path)[-4:]
-        sep = ';' if file_extension == '.csv' else '\t'
-        df = pd.read_csv(file_path, sep=sep,  encoding = 'unicode_escape')
-
+    for file_path in all_file_paths:        
+        sep = '\t|;'   # tab or semicolumn
+        df = pd.read_csv(file_path, sep=sep,  encoding = 'unicode_escape',
+                         engine='python')
         if 'ï»¿JOUR' in df.columns : # 2022 data is a bit problematic
             df = df.rename(columns={'ï»¿JOUR': 'JOUR'})
+            
+        try: 
             df["JOUR"] = pd.to_datetime(df["JOUR"], format="%Y-%m-%d")
-        else:
+        except ValueError:
             df["JOUR"] = pd.to_datetime(df["JOUR"], format="%d/%m/%Y")
+
+
         individual_dataframes.append(df)
 
     df = pd.concat(individual_dataframes)
@@ -318,7 +304,6 @@ def load_transport_data(network_type, debug=False):
 
 if __name__ == "__main__":
     rail_data = load_transport_data('rail', debug=True)
-    load_transport_data('surface', debug=True)
 
 
 
@@ -398,17 +383,17 @@ def load_national_holidays(day_array):
     """
 
 
-    with open(IdFM_path / Path("auxiliary_data/jours-ouvres-week-end-feries-france-2010-a-2030.csv"), 'r') as f:
-        calendar_df = pd.read_csv(f, header=0, sep=";")
+    with open(IdFM_path / Path("auxiliary_data/jours_feries_metropole.csv"), 'r') as f:
+        bank_holiday_df = pd.read_csv(f, header=0, sep=",")
 
-    calendar_df["Date"] = pd.to_datetime(calendar_df["Date"], format="%Y-%m-%d")
-    calendar_df["DAY_NO"] = (calendar_df["Date"] - IdFM_origin).astype('timedelta64[D]').astype(int)
-    calendar_df = sort_dataframe_by(calendar_df, "DAY_NO", order=day_array)
+    bank_holiday_df["date"] = pd.to_datetime(bank_holiday_df["date"], format="%Y-%m-%d")
+    bank_holiday_df["DAY_NO"] = (bank_holiday_df["date"] - IdFM_origin).astype('timedelta64[D]').astype(int)
+    bank_holiday_df = sort_dataframe_by(bank_holiday_df, "DAY_NO", order=day_array)
+        # contains NaNs fof non-holidays
+    bank_holiday_df["national_holiday"] = ~ (bank_holiday_df["nom_jour_ferie"].isna())
+                                                    # any field name will do
 
-    calendar_df["national_holiday"] = ~ (calendar_df["Statut"].isin(["ouvré", "week-end"]))
-        # 'jour ouvré' = 'workign_day'
-
-    return calendar_df["national_holiday"].to_numpy().astype(bool)
+    return bank_holiday_df["national_holiday"].to_numpy().astype(bool)
 
 
 if __name__ == "__main__":
@@ -532,8 +517,8 @@ def get_rail_type(id_array):
     train_present:       np.array of bools with shape (n_individuals,)
     """
 
-
     df_station_types = pd.read_csv(IdFM_path / rail_stations_filename, sep = ";")
+    df_station_types.rename(columns={"id_ref_ZdC":"id_ref_lda"}, inplace=True)  # some column names have changed
     df_station_types['id_ref_lda'] = df_station_types['id_ref_lda'].astype(float).astype(int)
 
 

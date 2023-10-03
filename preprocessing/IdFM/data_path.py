@@ -1,7 +1,7 @@
 from pathlib import Path
 
 
-IdFM_path = Path(r"/home/hugues_moreau/Documents/datasets/public_transport/ile_de_france_mobilites")
+IdFM_path = Path("[put your path here]")
 
 """
 Expected file path :
@@ -14,21 +14,21 @@ Expected file path :
     ...
     data_rf_2021
 
-    data_rs_2015
+    auxiliary_data
+        jours_feries_metropole.csv
+        emplacement-des-gares-idf-data-generalisee.csv
+	export-paris0.csv [optional]
+        
+    data_rs_2015 [optional]
         2015S1_NB_SURFACE.csv
         2015S2_NB_SURFACE.csv
         ...
     ...
-    data_rs_2021
+    data_rs_2021 [optional]
         2021S1_NB_SURFACE.csv
         2021S2_NB_SURFACE.csv
 
 
-    auxiliary_data
-        export-paris0.csv
-        jours-ouvres-week-end-feries-france-2010-a-2030.csv
-        emplacement-des-gares-idf-data-generalisee.csv
-        traces-des-lignes-regulieres-de-bus-en-ile-de-france.csv
 """
 
 # The files may be .csv or .txt
@@ -49,6 +49,6 @@ Expected file path :
 # https://www.historique-meteo.net/site/export.php?ville_id=188
 
 # And the list of holidays from
-# https://ardennemetropole.opendatasoft.com/explore/dataset/jours-ouvresweek-endferies-france-2010-a-2030/
+# https://www.data.gouv.fr/fr/datasets/jours-feries-en-france/
 
 
